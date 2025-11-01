@@ -1,0 +1,10 @@
+BASELINES
+
+self-contained baselines so i can actually do research
+
+allowed libraries: 
+- numpy
+- pytorch
+
+todo list: 
+- PPO
