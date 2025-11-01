@@ -4,7 +4,11 @@ self-contained baselines so i can actually do research
 
 allowed libraries: 
 - numpy
-- pytorch
+- torch
+- torchvision
+- tqdm
+- matplotlib
 
 todo list: 
 - PPO
+- VQ-VAE
