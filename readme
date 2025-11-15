@@ -10,5 +10,5 @@ allowed libraries:
 - matplotlib
 
 todo list: 
-- PPO
-- VQ-VAE
+- a2c
+- ppo
