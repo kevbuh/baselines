@@ -2,10 +2,15 @@
 import os
 import random
 import time
-from typing import SupportsFloat
+import warnings
+from typing import Any, NamedTuple, SupportsFloat
 from dataclasses import dataclass
+from abc import ABC, abstractmethod
 
+import ale_py
 import gymnasium as gym
+from gymnasium import spaces
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,11 +19,11 @@ import torch.optim as optim
 import tyro
 from torch.utils.tensorboard import SummaryWriter
 
-from abc import ABC, abstractmethod
-
-from gymnasium import spaces
-from typing import Any, NamedTuple
-import warnings
+try:
+    # Check memory used by replay buffer when possible
+    import psutil
+except ImportError:
+    psutil = None
 
 class RolloutBufferSamples(NamedTuple):
     observations: torch.Tensor
@@ -27,21 +32,6 @@ class RolloutBufferSamples(NamedTuple):
     old_log_prob: torch.Tensor
     advantages: torch.Tensor
     returns: torch.Tensor
-
-# from cleanrl_utils.atari_wrappers import (
-#     ClipRewardEnv,
-#     EpisodicLifeEnv,
-#     FireResetEnv,
-#     MaxAndSkipEnv,
-#     NoopResetEnv,
-# )
-# from cleanrl_utils.buffers import ReplayBuffer
-
-try:
-    # Check memory used by replay buffer when possible
-    import psutil
-except ImportError:
-    psutil = None
 
 class ReplayBufferSamples(NamedTuple):
     observations: torch.Tensor
@@ -469,8 +459,6 @@ class Args:
     train_frequency: int = 4
     """the frequency of training"""
 
-import ale_py
-
 class NoopResetEnv(gym.Wrapper[np.ndarray, int, np.ndarray, int]):
     """
     Sample initial states by taking random number of no-ops on reset.
@@ -619,7 +607,6 @@ def make_env(env_id, seed, idx, capture_video, run_name):
 
     return thunk
 
-
 # ALGO LOGIC: initialize agent here:
 class QNetwork(nn.Module):
     def __init__(self, env):
@@ -640,11 +627,9 @@ class QNetwork(nn.Module):
     def forward(self, x):
         return self.network(x / 255.0)
 
-
 def linear_schedule(start_e: float, end_e: float, duration: int, t: int):
     slope = (end_e - start_e) / duration
     return max(slope * t + start_e, end_e)
-
 
 if __name__ == "__main__":
     args = tyro.cli(Args)
@@ -652,21 +637,9 @@ if __name__ == "__main__":
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     if args.track:
         import wandb
-
-        wandb.init(
-            project=args.wandb_project_name,
-            entity=args.wandb_entity,
-            sync_tensorboard=True,
-            config=vars(args),
-            name=run_name,
-            monitor_gym=True,
-            save_code=True,
-        )
+        wandb.init(project=args.wandb_project_name, entity=args.wandb_entity, sync_tensorboard=True, config=vars(args), name=run_name, monitor_gym=True, save_code=True)
     writer = SummaryWriter(f"runs/{run_name}")
-    writer.add_text(
-        "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
-    )
+    writer.add_text("hyperparameters","|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
 
     # TRY NOT TO MODIFY: seeding
     random.seed(args.seed)
@@ -759,9 +732,7 @@ if __name__ == "__main__":
             # update target network
             if global_step % args.target_network_frequency == 0:
                 for target_network_param, q_network_param in zip(target_network.parameters(), q_network.parameters()):
-                    target_network_param.data.copy_(
-                        args.tau * q_network_param.data + (1.0 - args.tau) * target_network_param.data
-                    )
+                    target_network_param.data.copy_(args.tau * q_network_param.data + (1.0 - args.tau) * target_network_param.data)
 
     if args.save_model:
         model_path = f"runs/{run_name}/{args.exp_name}.cleanrl_model"
@@ -784,7 +755,6 @@ if __name__ == "__main__":
 
         if args.upload_model:
             from cleanrl_utils.huggingface import push_to_hub
-
             repo_name = f"{args.env_id}-{args.exp_name}-seed{args.seed}"
             repo_id = f"{args.hf_entity}/{repo_name}" if args.hf_entity else repo_name
             push_to_hub(args, episodic_returns, repo_id, "DQN", f"runs/{run_name}", f"videos/{run_name}-eval")
