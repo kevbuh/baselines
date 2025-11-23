@@ -220,7 +220,6 @@ def make_env(env_id, idx, capture_video, run_name):
         env = gym.wrappers.GrayscaleObservation(env)
         env = gym.wrappers.FrameStackObservation(env, 4)
         return env
-
     return thunk
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
@@ -336,7 +335,6 @@ if __name__ == "__main__":
                             # print(f"global_step={global_step}, episodic_return={ep_r}")
                             writer.add_scalar("train/episode_return", ep_r, global_step)
                             writer.add_scalar("train/episode_length", ep_l, global_step)
-
 
         # bootstrap value if not done
         with torch.no_grad():

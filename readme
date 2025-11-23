@@ -2,9 +2,6 @@ BASELINES
 
 self-contained rl baselines with minimal dependencies so i can actually do research
 
-todo list: 
-- ppo
-- dqn
 
 related links
 - https://github.com/seungeunrho/minimalRL
