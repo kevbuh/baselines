@@ -6,3 +6,9 @@ runs
 wandb
 tinygrad_repo
 tt.py
+SMiRL_Code
+__pycache__
+.pytest_cache
+.DS_Store
+*.pyc
+rlkit_ref
